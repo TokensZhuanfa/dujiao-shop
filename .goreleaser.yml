@@ -1,0 +1,142 @@
+# goreleaser v2 config — dujiao-shop monorepo, 放根目录,所有路径从根算
+# 触发: .github/workflows/release.yml 在 tag 'v*' 推送时调用
+version: 2
+
+project_name: dujiao-shop
+
+git:
+  tag_sort: -version:creatordate
+
+snapshot:
+  version_template: '{{ if index .Env "APP_VERSION" }}{{ .Env.APP_VERSION }}{{ else }}v0.0.0-dev{{ end }}'
+
+env:
+  - APP_VERSION={{ if index .Env "APP_VERSION" }}{{ .Env.APP_VERSION }}{{ else }}v0.0.0-dev{{ end }}
+  - LDFLAGS=-s -w -X github.com/TokensZhuanfa/dujiao-shop/internal/version.Version={{ .Env.APP_VERSION }}
+
+builds:
+  # api 全栈版 (内嵌 admin+user 前端,真·单文件部署)
+  - id: api-fullstack
+    binary: dujiao-api
+    main: ./cmd/server
+    dir: src/api
+    flags:
+      - -trimpath
+    tags:
+      - release
+      - fullstack
+    ldflags:
+      - "{{ .Env.LDFLAGS }}"
+    env:
+      - CGO_ENABLED=0
+    goos: [linux]
+    goarch: [amd64, arm64]
+
+  # api 精简版 (不内嵌前端,适合自己用 nginx 托管 admin/user dist)
+  - id: api-headless
+    binary: dujiao-api-headless
+    main: ./cmd/server
+    dir: src/api
+    flags:
+      - -trimpath
+    tags:
+      - release
+    ldflags:
+      - "{{ .Env.LDFLAGS }}"
+    env:
+      - CGO_ENABLED=0
+    goos: [linux]
+    goarch: [amd64, arm64]
+
+  # 后台运维 CLI (list-admins, reset-2fa 等)
+  - id: admin-tool
+    binary: admin-tool
+    main: ./cmd/admin-tool
+    dir: src/api
+    flags:
+      - -trimpath
+    ldflags:
+      - "{{ .Env.LDFLAGS }}"
+    env:
+      - CGO_ENABLED=0
+    goos: [linux]
+    goarch: [amd64, arm64]
+
+archives:
+  # 全栈包: dujiao-api(单文件全栈) + admin-tool + systemd + install.sh + 文档
+  - id: fullstack
+    ids: [api-fullstack, admin-tool]
+    name_template: 'dujiao-shop-fullstack_{{ .Env.APP_VERSION }}_{{ .Os }}_{{ .Arch }}'
+    files:
+      - src: deploy/release/install.sh
+        dst: install.sh
+        info:
+          mode: 0755
+      - src: deploy/release/dujiao.service
+        dst: systemd/dujiao.service
+      - src: deploy/config.template.yml
+        dst: config.template.yml
+      - src: README.md
+        dst: README.md
+      - src: LICENSE*
+        dst: ./
+      - src: deploy/release/README-binary.md
+        dst: INSTALL.md
+    formats: [tar.gz]
+
+  # 精简包: dujiao-api-headless + admin-tool + nginx 模板 + systemd + 文档
+  - id: headless
+    ids: [api-headless, admin-tool]
+    name_template: 'dujiao-shop-headless_{{ .Env.APP_VERSION }}_{{ .Os }}_{{ .Arch }}'
+    files:
+      - src: deploy/release/install.sh
+        dst: install.sh
+        info:
+          mode: 0755
+      - src: deploy/release/dujiao.service
+        dst: systemd/dujiao.service
+      - src: deploy/admin-nginx.conf
+        dst: nginx/admin.conf
+      - src: deploy/user-nginx.conf
+        dst: nginx/user.conf
+      - src: deploy/config.template.yml
+        dst: config.template.yml
+      - src: README.md
+        dst: README.md
+      - src: LICENSE*
+        dst: ./
+      - src: deploy/release/README-binary.md
+        dst: INSTALL.md
+    formats: [tar.gz]
+
+checksum:
+  name_template: 'checksums.txt'
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^chore:'
+      - '^test:'
+      - '^ci:'
+      - Merge pull request
+
+release:
+  github:
+    owner: TokensZhuanfa
+    name: dujiao-shop
+  draft: false
+  prerelease: auto
+  name_template: '{{ .Env.APP_VERSION }}'
+  header: |
+    # dujiao-shop {{ .Env.APP_VERSION }}
+
+    自托管自动发卡 / 卡密商店。三种部署方式:
+    - **Docker Compose** (推荐, 见 [README](https://github.com/TokensZhuanfa/dujiao-shop#docker-compose-推荐))
+    - **二进制 fullstack** — 下载 `dujiao-shop-fullstack_*_linux_*.tar.gz`,解压 → `./install.sh`,**单文件全栈**,无需 nginx
+    - **二进制 headless + nginx** — 下载 `dujiao-shop-headless_*_linux_*.tar.gz`,自己用 nginx 托管前端
+  footer: |
+    ---
+    SHA256 校验见 `checksums.txt`。问题反馈: https://github.com/TokensZhuanfa/dujiao-shop/issues

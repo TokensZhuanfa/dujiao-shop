@@ -1,0 +1,32 @@
+[Unit]
+Description=dujiao-shop API (auto-card store)
+Documentation=https://github.com/TokensZhuanfa/dujiao-shop
+After=network-online.target redis-server.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dujiao
+Group=dujiao
+WorkingDirectory=/opt/dujiao
+ExecStart=/opt/dujiao/dujiao-api
+Restart=always
+RestartSec=5
+LimitNOFILE=65535
+
+# 安全加固
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/dujiao/db /opt/dujiao/uploads /opt/dujiao/logs /opt/dujiao/credentials
+
+# 资源限制 (按需调整)
+MemoryHigh=512M
+MemoryMax=1G
+
+# 环境变量(可选,通常在 config.yml 配)
+# Environment=DJ_AD_GATEWAY_URL=https://ad.zhuanfa.eu.org
+
+[Install]
+WantedBy=multi-user.target

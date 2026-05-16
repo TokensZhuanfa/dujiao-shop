@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '手动触发时使用的版本号 (例如 v1.2.3)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout monorepo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          fi
+
+      # ---------- 前端 ----------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: |
+            src/admin/package-lock.json
+            src/user/package-lock.json
+
+      - name: Build admin (fullstack mode)
+        working-directory: src/admin
+        run: |
+          npm ci
+          npm run build:fullstack
+
+      - name: Build user
+        working-directory: src/user
+        run: |
+          npm ci
+          npm run build
+
+      # 把前端 dist 嵌入到 api 树里,goreleaser 用 fullstack tag 时会 embed 进二进制
+      - name: Embed frontend assets into api
+        run: |
+          mkdir -p src/api/internal/web/dist
+          cp -r src/admin/dist src/api/internal/web/dist/admin
+          cp -r src/user/dist  src/api/internal/web/dist/user
+          ls -la src/api/internal/web/dist/
+
+      # ---------- Go + GoReleaser ----------
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache-dependency-path: src/api/go.sum
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APP_VERSION: ${{ steps.ver.outputs.VERSION }}
+
+      # ---------- 顺手把 admin/user 纯前端 zip 也挂上 release,
+      #            给"想自己 nginx 托管前端"的用户用 ----------
+      - name: Zip admin dist
+        run: |
+          cd src/admin/dist && zip -r "${{ github.workspace }}/dujiao-shop-admin-${{ steps.ver.outputs.VERSION }}.zip" .
+
+      - name: Zip user dist
+        run: |
+          cd src/user/dist && zip -r "${{ github.workspace }}/dujiao-shop-user-${{ steps.ver.outputs.VERSION }}.zip" .
+
+      - name: Upload front-end zips to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.VERSION }}
+          files: |
+            dujiao-shop-admin-${{ steps.ver.outputs.VERSION }}.zip
+            dujiao-shop-user-${{ steps.ver.outputs.VERSION }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

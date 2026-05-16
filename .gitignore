@@ -1,0 +1,38 @@
+# Go
+*.exe
+*.test
+*.out
+*.log
+bin/
+vendor/
+
+# Node
+node_modules/
+dist/
+.cache/
+*.local
+
+# Editor
+.idea/
+.vscode/
+*.swp
+
+# Local config / db
+*.db
+*.db-shm
+*.db-wal
+config.yml
+!config.yml.example
+
+# Build artifacts
+deploy/build/
+*.zip
+*.tar.gz
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets samples (上游放的示例账号 JSON，绝对不进仓)
+Codex-*.json
+Sub2api-*.json
