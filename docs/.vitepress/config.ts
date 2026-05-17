@@ -21,65 +21,104 @@ export default defineConfig({
     logo: { src: '/logo.svg', alt: 'dujiao-shop' },
 
     nav: [
-      { text: '指南', link: '/install/docker', activeMatch: '^/(install|reference|admin|ops|customization|faq)' },
-      { text: 'FAQ', link: '/faq' },
-      { text: '发布', link: '/release' },
+      { text: '指南', link: '/intro/about', activeMatch: '^/(intro|config|deploy|guide|payment|ops|community|api|services|sponsor)' },
+      { text: 'Demo', link: 'https://github.com/TokensZhuanfa/Dujiao-Shop' },
       { text: 'GitHub', link: 'https://github.com/TokensZhuanfa/Dujiao-Shop' },
     ],
 
-    // 全局 sidebar (array 形式 → 所有非首页页面都看到同一份)
+    // 全局 sidebar (参考 dujiao-next.com 10 大分组)
     sidebar: [
       {
         text: '简介',
         collapsed: false,
         items: [
-          { text: '快速开始', link: '/install/docker' },
-          { text: '功能特性', link: '/' },
-          { text: '常见问题 FAQ', link: '/faq' },
-        ],
-      },
-      {
-        text: '部署',
-        collapsed: false,
-        items: [
-          { text: 'Docker Compose (推荐)', link: '/install/docker' },
-          { text: '宝塔面板', link: '/install/baota' },
-          { text: '单二进制 (轻量)', link: '/install/binary' },
-          { text: '源码编译', link: '/install/source' },
+          { text: '关于 dujiao-shop', link: '/intro/about' },
+          { text: '环境要求', link: '/intro/requirements' },
+          { text: '更新日志', link: '/intro/changelog' },
+          { text: '术语统一表', link: '/intro/glossary' },
+          { text: '开源仓库与贡献', link: '/intro/repos' },
         ],
       },
       {
         text: '配置',
         collapsed: false,
         items: [
-          { text: 'config.yml 详解', link: '/reference/config' },
+          { text: 'config.yml 详细说明', link: '/config/yaml' },
+        ],
+      },
+      {
+        text: '部署',
+        collapsed: false,
+        items: [
+          { text: '部署总览', link: '/deploy/overview' },
+          { text: '单二进制部署 (推荐小白)', link: '/deploy/single-binary' },
+          { text: '手动部署 (源码)', link: '/deploy/manual' },
+          { text: 'Docker Compose 部署', link: '/deploy/docker-compose' },
+          { text: '宝塔面板部署', link: '/deploy/baota' },
         ],
       },
       {
         text: '使用指南',
         collapsed: false,
         items: [
-          { text: '后台管理速览', link: '/admin/usage' },
-          { text: '支付通道接入', link: '/admin/payment' },
-          { text: 'Codex 号池', link: '/customization/codex-pool' },
+          { text: '后台管理入门', link: '/guide/admin-getting-started' },
+          { text: '卡密管理', link: '/guide/cards' },
+          { text: 'Codex 号池', link: '/guide/codex-pool' },
+          { text: '钱包与礼品卡', link: '/guide/wallet-giftcard' },
+          { text: '优惠券与活动价', link: '/guide/coupons' },
+          { text: '会员等级', link: '/guide/member-levels' },
+          { text: '分销推广', link: '/guide/affiliate' },
+          { text: '通知中心配置', link: '/guide/notifications' },
+          { text: '安全最佳实践', link: '/guide/security' },
+          { text: '常见问题 FAQ', link: '/guide/faq' },
+        ],
+      },
+      {
+        text: '支付',
+        collapsed: false,
+        items: [
+          { text: '支付配置与回调指南', link: '/payment/setup' },
         ],
       },
       {
         text: '部署运维',
         collapsed: false,
         items: [
+          { text: '升级与迁移', link: '/ops/upgrade-migration' },
           { text: '备份与恢复', link: '/ops/backup-restore' },
           { text: '故障排查', link: '/ops/troubleshooting' },
-          { text: '安全加固', link: '/ops/security' },
         ],
       },
       {
-        text: '二次开发',
+        text: '社区',
         collapsed: true,
         items: [
-          { text: '项目结构', link: '/customization/architecture' },
-          { text: '上游同步', link: '/customization/upstream-sync' },
-          { text: '发布流程', link: '/release' },
+          { text: '社区共享项目', link: '/community/shared-projects' },
+        ],
+      },
+      {
+        text: 'API 集成',
+        collapsed: true,
+        items: [
+          { text: 'User 前台 API 文档', link: '/api/user' },
+          { text: '站点对接说明', link: '/api/site-integration' },
+          { text: '站点对接 API 文档', link: '/api/site-integration-api' },
+        ],
+      },
+      {
+        text: '官方服务',
+        collapsed: true,
+        items: [
+          { text: '官方服务说明', link: '/services/official' },
+          { text: 'Telegram Bot 服务介绍', link: '/services/telegram-bot' },
+        ],
+      },
+      {
+        text: '赞助',
+        collapsed: true,
+        items: [
+          { text: '成为赞助商', link: '/sponsor/become' },
+          { text: '赞助商名单', link: '/sponsor/silver-list' },
         ],
       },
     ],
