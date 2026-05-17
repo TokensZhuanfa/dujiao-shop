@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="14" fill="#3eaf7c"/>
+  <path d="M16 24 L32 16 L48 24 L48 40 L32 48 L16 40 Z" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+  <text x="32" y="38" text-anchor="middle" font-family="ui-monospace, monospace" font-size="14" font-weight="bold" fill="#fff">dj</text>
+</svg>
