@@ -82,13 +82,28 @@ cd deploy && docker compose up -d --build
 - 宝塔内置 nginx
 - 准备好 2 个域名指到本机(可后补,先用 IP+端口验证也行)
 
-#### 2.1 装 Redis (避开宝塔自带 libjemalloc 冲突)
+#### 2.1 装 Redis (二选一)
+
+dujiao-api 需要 redis 做异步队列 + 缓存,绑定 `127.0.0.1:6379`,无密码。两种装法挑一个:
+
+**方法 A — 宝塔商店装(推荐,无坑)**
+
+宝塔面板 → 软件商店 → 搜 `Redis` → 选 6.x 或 7.x → 安装(编译需要 5-10 分钟)。装完默认就监听 `127.0.0.1:6379` 无密码,完全可用。
 
 ```bash
-apt update && apt install -y redis-server unzip
+# 验证
+redis-cli ping     # 应返 PONG
 ```
 
-⚠️ **必踩坑**:apt 装的 redis 7.x 会被宝塔自带的 `/usr/local/lib/libjemalloc.so.2`(旧版)劫持,启动报 `error while loading shared libraries: libjemalloc.so.2: failed to map segment from shared object`。一行 systemd drop-in 强制用 apt 的 jemalloc 修好:
+> 宝塔商店的 redis 是自编译版本,**不会跟宝塔自带的 libjemalloc 打架**。
+
+**方法 B — `apt` 装(需要修一个冲突)**
+
+```bash
+apt update && apt install -y redis-server
+```
+
+⚠️ apt 装的 redis 7.x 会被宝塔自带的 `/usr/local/lib/libjemalloc.so.2`(旧版)劫持,启动报 `error while loading shared libraries: libjemalloc.so.2: failed to map segment from shared object`。一行 systemd drop-in 强制用 apt 的 jemalloc 修好:
 
 ```bash
 mkdir -p /etc/systemd/system/redis-server.service.d
@@ -104,6 +119,9 @@ redis-cli ping     # 应返 PONG
 #### 2.2 下载二进制 + 前端 dist
 
 ```bash
+# unzip 用来解前端 zip
+command -v unzip >/dev/null || apt install -y unzip
+
 mkdir -p /www/server/dujiao /www/wwwroot/dujiao-user /www/wwwroot/dujiao-admin
 cd /www/server/dujiao
 
