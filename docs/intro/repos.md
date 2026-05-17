@@ -46,18 +46,6 @@ git fetch upstream-user  main && git subtree pull --prefix=src/user  upstream-us
 - `i18n/index.ts` 国际化字串(我们改过的品牌名 `Dujiao-Shop` 会被改回)
 - `SiteConnections.vue` 里 `protocol: 'dujiao-next'` **保留**,不要改成 `dujiao-shop`(那是数据库 enum 值,改了破坏跨站点互联)
 
-## 主要二次开发
-
-| 改造 | 实现位置 | 说明 |
-|---|---|---|
-| **Codex 号池** | `src/api/internal/service/codex_account_service.go` | token 轮换 + 额度刷新 + 状态识别 |
-| **号池预占** | `src/api/internal/service/order_service.go:488` | 原子占住账号,付款转 sold |
-| **文件型卡密** | `src/api/internal/service/fulfillment_service.go` | 1 GB 内文件交付 |
-| **CpaMC / Sub2api 双格式** | `src/admin/src/views/orders/CodexAccountsModal.vue` | 单 / 全部打包下载 |
-| **订单号 base32 高熵** | `src/api/internal/utils/orderno.go` | 防扫单 |
-| **JWT + 2FA** | `src/api/internal/service/auth_service.go` | TOTP + recovery codes |
-| **暴破锁定** | config `security.login_rate_limit` | 5/300s 锁 900s |
-
 ## 贡献
 
 欢迎 PR。流程:
