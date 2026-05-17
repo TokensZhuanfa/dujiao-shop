@@ -118,6 +118,13 @@ redis-cli ping     # 应返 PONG
 
 #### 2.2 下载二进制 + 前端 dist
 
+> **架构核心**:dujiao-shop 一套部署分 3 个东西
+> - **dujiao-api-headless**(后端二进制) → systemd 拉起,监听 `127.0.0.1:8080`,**所有 api 请求都打它**
+> - **dujiao-user dist**(用户前台静态文件)   → 给宝塔站点 ①
+> - **dujiao-admin dist**(管理后台静态文件) → 给宝塔站点 ②
+>
+> 两个站点都把 `/api/*` 反代到同一个后端二进制,只是根目录指向各自的前端 dist。
+
 ```bash
 # unzip 用来解前端 zip
 command -v unzip >/dev/null || apt install -y unzip
@@ -128,21 +135,33 @@ cd /www/server/dujiao
 VERSION=v1.0.0   # 看 https://github.com/TokensZhuanfa/Dujiao-Shop/releases 最新版
 BASE=https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/${VERSION}
 
-# headless 二进制 (api 后端,~28MB)
+# ① 后端二进制 (headless, ~28MB) — 解到 /www/server/dujiao/
 curl -fsSL -O "${BASE}/dujiao-shop-headless_${VERSION}_linux_amd64.tar.gz"
 tar xzf dujiao-shop-headless_*.tar.gz
 chmod +x dujiao-api-headless admin-tool install.sh
 
-# 前端 dist (静态文件,给宝塔 nginx 托管)
-curl -fsSL -o admin.zip "${BASE}/dujiao-shop-admin-${VERSION}.zip"
-curl -fsSL -o user.zip  "${BASE}/dujiao-shop-user-${VERSION}.zip"
-unzip -q admin.zip -d /www/wwwroot/dujiao-admin/
-unzip -q user.zip  -d /www/wwwroot/dujiao-user/
-chown -R www:www /www/wwwroot/dujiao-admin /www/wwwroot/dujiao-user
+# ② 用户前台 dist (816KB) — 解到 /www/wwwroot/dujiao-user/
+curl -fsSL -o user.zip "${BASE}/dujiao-shop-user-${VERSION}.zip"
+unzip -q user.zip -d /www/wwwroot/dujiao-user/
 
-# 数据目录
+# ③ 管理后台 dist (816KB) — 解到 /www/wwwroot/dujiao-admin/
+curl -fsSL -o admin.zip "${BASE}/dujiao-shop-admin-${VERSION}.zip"
+unzip -q admin.zip -d /www/wwwroot/dujiao-admin/
+
+# 权限给 nginx 用户 www
+chown -R www:www /www/wwwroot/dujiao-user /www/wwwroot/dujiao-admin
+
+# 数据目录 (api 写 SQLite / 上传 / 卡密 / 日志)
 mkdir -p /www/server/dujiao/{db,uploads,credentials,logs}
 ```
+
+**3 个产物各放各的位置,别搞混**:
+
+| 文件 | 解压到 | 用途 |
+|---|---|---|
+| `dujiao-shop-headless_${VERSION}_linux_amd64.tar.gz` | `/www/server/dujiao/` | api 二进制(systemd 拉起,监听 8080) |
+| `dujiao-shop-user-${VERSION}.zip` | `/www/wwwroot/dujiao-user/` | 用户前台 SPA(浏览/下单)|
+| `dujiao-shop-admin-${VERSION}.zip` | `/www/wwwroot/dujiao-admin/` | 管理后台 SPA(商品/订单管理) |
 
 #### 2.3 生成配置 config.yml
 
@@ -210,25 +229,32 @@ curl -fsS http://127.0.0.1:8080/health    # 应返 {"status":"ok"}
 
 #### 2.5 在宝塔面板加 **2 个站点**
 
-进**宝塔面板 → 网站 → 添加站点**,各填一个:
+进**宝塔面板 → 网站 → 添加站点**,各填一个。**两站只在域名和根目录上不同,其他完全一样**:
 
-| 字段 | **站点 1 (user 前台)** | **站点 2 (admin 后台)** |
+| 字段 | **站点 ① 用户前台 (user)** | **站点 ② 管理后台 (admin)** |
 |---|---|---|
-| 域名 | `user.your.com` (你的域名) | `admin.your.com` |
+| 用途 | 顾客访问,浏览 / 下单 / 付款 | 你自己进,管理商品 / 订单 / 卡密 |
+| 域名 | `user.your.com` (主域名) | `admin.your.com` (后台子域) |
 | 备注 | dujiao-shop 用户端 | dujiao-shop 管理端 |
-| 根目录 | `/www/wwwroot/dujiao-user` | `/www/wwwroot/dujiao-admin` |
+| **根目录** | **`/www/wwwroot/dujiao-user`** | **`/www/wwwroot/dujiao-admin`** |
 | FTP | 不创建 | 不创建 |
-| 数据库 | 不创建 | 不创建 |
-| PHP 版本 | **纯静态** | **纯静态** |
+| 数据库 | **不创建** (数据库在 api 后端 SQLite 里) | **不创建** |
+| PHP 版本 | **纯静态** (前端就是 HTML/JS,不跑 PHP) | **纯静态** |
 
-> 没域名也行:**域名**字段填 `94.16.112.46:8082`(写 IP:端口),宝塔会自动把站点监听 8082,直接用 IP 访问。
+> **没域名也行**:`域名` 字段写 `94.16.112.46:8082`(IP:端口),宝塔会让站点监听 8082,直接用 `http://94.16.112.46:8082` 访问。admin 站可用 8083。
 
-#### 2.6 给每站贴**伪静态**(Rewrite)
+#### 2.6 给**每个**站贴**同一份**伪静态(Rewrite)
 
-**宝塔面板 → 网站 → user 站点 → 设置 → 伪静态**,清空原内容,贴下面这一整段:
+> **两个站伪静态完全一样**,因为它们都要做同样的两件事:
+> 1. 把 `/api/*` 反代到后端二进制(`127.0.0.1:8080`)
+> 2. 其他 URL 走 SPA fallback(`/index.html`)
+>
+> 站点的不同在于 nginx `root` 字段——而这个字段在 **2.5 加站点**时已经填了(`dujiao-user` vs `dujiao-admin`),所以伪静态本身可以一字不改地两站共用。
+
+**操作**:宝塔面板 → 网站 → **每个站点**逐个点进去 → **设置 → 伪静态** → 清空原内容 → 贴下面**这一整段一字不差**:
 
 ```nginx
-# /api/ 反代到本机 dujiao-api
+# /api/ 反代到本机 dujiao-api (后端二进制监听 127.0.0.1:8080)
 location /api/ {
     proxy_pass http://127.0.0.1:8080;
     proxy_http_version 1.1;
@@ -239,16 +265,16 @@ location /api/ {
     proxy_buffering off;
 }
 
-# 上传文件接口需要更大 body
+# 上传文件接口需要更大 body (商品图、卡密文件)
 client_max_body_size 100M;
 
-# SPA 路由 fallback (Vue Router history 模式必须)
+# Vue Router history 模式:任何前端路由 fallback 到 /index.html
 location / {
     try_files $uri $uri/ /index.html;
 }
 ```
 
-**保存后宝塔会自动 reload nginx**。**admin 站点贴同样一份**(两个站伪静态完全一致)。
+保存后宝塔自动 reload nginx。**两个站都贴一遍,内容完全相同**。
 
 #### 2.7 申请 SSL (有域名才用)
 
