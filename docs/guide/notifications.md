@@ -60,18 +60,18 @@ dujiao-shop 内置 3 个通知通道:邮件 / Telegram Bot / Webhook。后台 **
 | URL | 你的接收端,如 `https://oapi.dingtalk.com/robot/send?access_token=...` |
 | Secret | 可选,验签密钥(`X-Dujiao-Signature` HMAC-SHA256) |
 | 触发场景 | 同上 |
-| 消息模板 | Markdown,可用变量 `{{order_no}}` `{{amount}}` `{{user.email}}` 等 |
+| 消息模板 | Markdown,可用变量 `{order_no}` `{amount}` `{user.email}` 等 |
 
 ### 模板变量
 
 | 变量 | 含义 |
 |---|---|
-| `{{event}}` | order.paid / order.refunded / user.register / ... |
-| `{{order_no}}` | 订单号 |
-| `{{amount}}` | 订单金额(decimal) |
-| `{{user.id}}` / `{{user.email}}` | 下单用户 |
-| `{{products}}` | 商品列表(用 ` ` 拼接)|
-| `{{paid_at}}` / `{{refunded_at}}` | ISO 时间 |
+| `{event}` | order.paid / order.refunded / user.register / ... |
+| `{order_no}` | 订单号 |
+| `{amount}` | 订单金额(decimal) |
+| `{user.id}` / `{user.email}` | 下单用户 |
+| `{products}` | 商品列表(用 ` ` 拼接)|
+| `{paid_at}` / `{refunded_at}` | ISO 时间 |
 
 ### 签名验证(可选)
 
