@@ -21,115 +21,75 @@ export default defineConfig({
     logo: { src: '/logo.svg', alt: 'dujiao-shop' },
 
     nav: [
-      { text: '首页', link: '/' },
+      { text: '指南', link: '/install/docker', activeMatch: '^/(install|reference|admin|ops|customization|faq)' },
+      { text: 'FAQ', link: '/faq' },
+      { text: '发布', link: '/release' },
+      { text: 'GitHub', link: 'https://github.com/TokensZhuanfa/Dujiao-Shop' },
+    ],
+
+    // 全局 sidebar (array 形式 → 所有非首页页面都看到同一份)
+    sidebar: [
       {
-        text: '安装部署',
+        text: '简介',
+        collapsed: false,
         items: [
-          { text: 'Docker Compose', link: '/install/docker' },
+          { text: '快速开始', link: '/install/docker' },
+          { text: '功能特性', link: '/' },
+          { text: '常见问题 FAQ', link: '/faq' },
+        ],
+      },
+      {
+        text: '部署',
+        collapsed: false,
+        items: [
+          { text: 'Docker Compose (推荐)', link: '/install/docker' },
           { text: '宝塔面板', link: '/install/baota' },
-          { text: '二进制 (轻量)', link: '/install/binary' },
+          { text: '单二进制 (轻量)', link: '/install/binary' },
           { text: '源码编译', link: '/install/source' },
         ],
       },
       {
-        text: '配置参考',
+        text: '配置',
+        collapsed: false,
         items: [
           { text: 'config.yml 详解', link: '/reference/config' },
         ],
       },
       {
-        text: '后台管理',
+        text: '使用指南',
+        collapsed: false,
         items: [
-          { text: '使用速览', link: '/admin/usage' },
+          { text: '后台管理速览', link: '/admin/usage' },
           { text: '支付通道接入', link: '/admin/payment' },
+          { text: 'Codex 号池', link: '/customization/codex-pool' },
         ],
       },
       {
-        text: '运维',
+        text: '部署运维',
+        collapsed: false,
         items: [
-          { text: '备份恢复', link: '/ops/backup-restore' },
+          { text: '备份与恢复', link: '/ops/backup-restore' },
           { text: '故障排查', link: '/ops/troubleshooting' },
           { text: '安全加固', link: '/ops/security' },
         ],
       },
       {
         text: '二次开发',
+        collapsed: true,
         items: [
           { text: '项目结构', link: '/customization/architecture' },
-          { text: 'Codex 号池', link: '/customization/codex-pool' },
           { text: '上游同步', link: '/customization/upstream-sync' },
+          { text: '发布流程', link: '/release' },
         ],
       },
-      { text: 'FAQ', link: '/faq' },
-      { text: '发布', link: '/release' },
-      { text: 'GitHub', link: 'https://github.com/TokensZhuanfa/Dujiao-Shop' },
     ],
-
-    sidebar: {
-      '/install/': [
-        {
-          text: '安装部署',
-          items: [
-            { text: 'Docker Compose (推荐)', link: '/install/docker' },
-            { text: '宝塔面板', link: '/install/baota' },
-            { text: '二进制 (轻量)', link: '/install/binary' },
-            { text: '源码编译', link: '/install/source' },
-          ],
-        },
-        {
-          text: '安装后',
-          items: [
-            { text: 'config.yml 详解', link: '/reference/config' },
-            { text: '后台使用', link: '/admin/usage' },
-            { text: '支付通道接入', link: '/admin/payment' },
-          ],
-        },
-      ],
-      '/reference/': [
-        {
-          text: '配置参考',
-          items: [
-            { text: 'config.yml 详解', link: '/reference/config' },
-          ],
-        },
-      ],
-      '/admin/': [
-        {
-          text: '后台管理',
-          items: [
-            { text: '使用速览', link: '/admin/usage' },
-            { text: '支付通道接入', link: '/admin/payment' },
-          ],
-        },
-      ],
-      '/ops/': [
-        {
-          text: '运维',
-          items: [
-            { text: '备份恢复', link: '/ops/backup-restore' },
-            { text: '故障排查', link: '/ops/troubleshooting' },
-            { text: '安全加固', link: '/ops/security' },
-          ],
-        },
-      ],
-      '/customization/': [
-        {
-          text: '二次开发',
-          items: [
-            { text: '项目结构', link: '/customization/architecture' },
-            { text: 'Codex 号池', link: '/customization/codex-pool' },
-            { text: '上游同步', link: '/customization/upstream-sync' },
-          ],
-        },
-      ],
-    },
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/TokensZhuanfa/Dujiao-Shop' },
     ],
 
     footer: {
-      message: '基于 <a href="https://github.com/dujiao-next">dujiao-next</a> 上游 fork · MIT License',
+      message: 'MIT License',
       copyright: '© 2026 TokensZhuanfa',
     },
 
