@@ -34,8 +34,8 @@ docker compose up -d --build
 
 ```bash
 cd /tmp
-VERSION=v1.0.1
-curl -L -O https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/${VERSION}/dujiao-shop-fullstack_${VERSION}_linux_amd64.tar.gz
+# 把 URL 里的 v1.0.1 替换成你要升到的新 tag
+curl -L -O https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/v1.0.1/dujiao-shop-fullstack_v1.0.1_linux_amd64.tar.gz
 tar xzf dujiao-shop-fullstack_*.tar.gz
 cd dujiao-shop-fullstack_*/
 sudo ./install.sh         # 覆盖二进制,保留 config.yml + db/ + uploads/ + credentials/
@@ -47,22 +47,20 @@ sudo journalctl -u dujiao -f
 
 ## 宝塔 / 手动部署升级
 
-后端二进制 + 前端 dist 分开升:
+后端二进制 + 前端 dist 分开升。把下面所有 URL 里的 `v1.0.1` 整体改成新 tag:
 
 ```bash
 cd /www/server/dujiao
-VERSION=v1.0.1
-BASE=https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/${VERSION}
 
 # 后端
-curl -L -o headless.tar.gz "${BASE}/dujiao-shop-headless_${VERSION}_linux_amd64.tar.gz"
+curl -L -o headless.tar.gz https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/v1.0.1/dujiao-shop-headless_v1.0.1_linux_amd64.tar.gz
 tar xzf headless.tar.gz   # 覆盖 dujiao-api-headless + admin-tool + install.sh + INSTALL.md
 chmod +x dujiao-api-headless admin-tool install.sh
 systemctl restart dujiao-api
 
 # 前端
-curl -L -o /tmp/admin.zip "${BASE}/dujiao-shop-admin-${VERSION}.zip"
-curl -L -o /tmp/user.zip  "${BASE}/dujiao-shop-user-${VERSION}.zip"
+curl -L -o /tmp/admin.zip https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/v1.0.1/dujiao-shop-admin-v1.0.1.zip
+curl -L -o /tmp/user.zip  https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/v1.0.1/dujiao-shop-user-v1.0.1.zip
 unzip -qo /tmp/admin.zip -d /www/wwwroot/dujiao-admin/
 unzip -qo /tmp/user.zip  -d /www/wwwroot/dujiao-user/
 chown -R www:www /www/wwwroot/dujiao-{admin,user}
