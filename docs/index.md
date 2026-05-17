@@ -46,6 +46,16 @@ features:
 | 小内存 VPS、不想跑 docker | [**二进制 fullstack**](/install/binary) |
 | 想改代码 / 二次开发 | [**源码编译**](/install/source) |
 
+## 装完看这些
+
+- 📖 [**config.yml 详解**](/reference/config) — 每个字段干嘛的
+- 💳 [**支付通道接入**](/admin/payment) — 易支付 / Stripe / PayPal / USDT
+- 🎛️ [**后台使用速览**](/admin/usage) — 商品 / 订单 / 卡密 / 号池
+- 💾 [**备份恢复**](/ops/backup-restore) — 每天 cron + 异地
+- 🛡️ [**安全加固 checklist**](/ops/security) — 上线前过一遍
+- 🩺 [**故障排查**](/ops/troubleshooting) — 出问题对照看
+- ❓ [**FAQ**](/faq) — 高频问题速答
+
 ## 最新 Release
 
 最新版本在 [GitHub Releases](https://github.com/TokensZhuanfa/Dujiao-Shop/releases) 页面下载。

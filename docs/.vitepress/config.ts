@@ -1,7 +1,6 @@
 import { defineConfig } from 'vitepress'
 
 // GitHub Pages 项目站点: https://TokensZhuanfa.github.io/Dujiao-Shop/
-// base 必须跟 repo 名一致(大小写敏感)
 export default defineConfig({
   base: '/Dujiao-Shop/',
   lang: 'zh-CN',
@@ -33,14 +32,36 @@ export default defineConfig({
         ],
       },
       {
+        text: '配置参考',
+        items: [
+          { text: 'config.yml 详解', link: '/reference/config' },
+        ],
+      },
+      {
+        text: '后台管理',
+        items: [
+          { text: '使用速览', link: '/admin/usage' },
+          { text: '支付通道接入', link: '/admin/payment' },
+        ],
+      },
+      {
+        text: '运维',
+        items: [
+          { text: '备份恢复', link: '/ops/backup-restore' },
+          { text: '故障排查', link: '/ops/troubleshooting' },
+          { text: '安全加固', link: '/ops/security' },
+        ],
+      },
+      {
         text: '二次开发',
         items: [
-          { text: 'Codex 号池', link: '/customization/codex-pool' },
           { text: '项目结构', link: '/customization/architecture' },
+          { text: 'Codex 号池', link: '/customization/codex-pool' },
           { text: '上游同步', link: '/customization/upstream-sync' },
         ],
       },
-      { text: '发布流程', link: '/release' },
+      { text: 'FAQ', link: '/faq' },
+      { text: '发布', link: '/release' },
       { text: 'GitHub', link: 'https://github.com/TokensZhuanfa/Dujiao-Shop' },
     ],
 
@@ -53,6 +74,41 @@ export default defineConfig({
             { text: '宝塔面板', link: '/install/baota' },
             { text: '二进制 (轻量)', link: '/install/binary' },
             { text: '源码编译', link: '/install/source' },
+          ],
+        },
+        {
+          text: '安装后',
+          items: [
+            { text: 'config.yml 详解', link: '/reference/config' },
+            { text: '后台使用', link: '/admin/usage' },
+            { text: '支付通道接入', link: '/admin/payment' },
+          ],
+        },
+      ],
+      '/reference/': [
+        {
+          text: '配置参考',
+          items: [
+            { text: 'config.yml 详解', link: '/reference/config' },
+          ],
+        },
+      ],
+      '/admin/': [
+        {
+          text: '后台管理',
+          items: [
+            { text: '使用速览', link: '/admin/usage' },
+            { text: '支付通道接入', link: '/admin/payment' },
+          ],
+        },
+      ],
+      '/ops/': [
+        {
+          text: '运维',
+          items: [
+            { text: '备份恢复', link: '/ops/backup-restore' },
+            { text: '故障排查', link: '/ops/troubleshooting' },
+            { text: '安全加固', link: '/ops/security' },
           ],
         },
       ],
