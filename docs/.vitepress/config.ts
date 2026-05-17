@@ -7,7 +7,7 @@ export default defineConfig({
   title: 'dujiao-shop',
   description: '自托管自动发卡 / 卡密商店 · 文档',
 
-  lastUpdated: true,
+  lastUpdated: false,
   cleanUrls: true,
   ignoreDeadLinks: true,
 
