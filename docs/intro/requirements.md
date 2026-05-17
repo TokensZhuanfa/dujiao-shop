@@ -1,8 +1,10 @@
 # 环境要求
 
-不同部署方式对环境的要求差别很大,按你的目标方式看对应列。
+每种部署方式对环境的依赖不一样,挑你打算用的看对应章节。
 
-## 整体硬件参考
+## 通用硬件参考
+
+不管哪种部署方式,机器都要满足:
 
 | 项 | 最低 | 推荐 |
 |---|---|---|
@@ -14,67 +16,78 @@
 
 实测 1 GB RAM 机能稳定跑 1k 日订单 + 几百个号池账号,**只要 swap 给够**。
 
-## 按部署方式区分
+防火墙最小开放(任何方式都一样):
 
-|  | Docker Compose | 宝塔面板 | 单二进制 fullstack | 源码编译 |
-|---|---|---|---|---|
-| Docker + Compose plugin | ✅ 必须 | ❌ 不用 | ❌ 不用 | ❌ 不用 |
-| nginx | ❌ 容器内置 | ✅ 宝塔自带 | ❌ 二进制内含 | ✅ dev 用 vite |
-| Redis | ❌ 容器内置 | ✅ 宝塔商店 / apt | ✅ apt 或自编 | ✅ 自装 |
-| systemd | ❌ | ✅ 装 api 用 | ✅ install.sh 自动 | 自选 |
-| 宝塔面板 | ❌ | ✅ 必须装好 | ❌ | ❌ |
-| Go 工具链 | ❌ build 在容器内 | ❌ 用 release tarball | ❌ | ✅ **Go 1.25+** |
-| Node.js | ❌ | ❌ | ❌ | ✅ **Node 24+** |
-| openssl | 推荐 | 推荐 | 推荐 | 推荐 |
+```bash
+ufw default deny incoming
+ufw allow 22/tcp        # SSH
+ufw allow 80/tcp        # HTTPS redirect
+ufw allow 443/tcp       # HTTPS
+ufw enable
+```
 
-## Docker Compose
+## Docker Compose 部署
 
-- Debian 12 / Ubuntu 22.04+(`deploy.sh` 默认按 Debian 12 适配)
-- Docker 24+ 且 Compose plugin V2
-- RAM 至少 2 GB(单容器 build 时峰值 1.5 GB),小机要 swap
+参考 [Docker Compose 部署](/deploy/docker-compose)。需要装:
 
-## 宝塔面板
+- **Docker** 24+
+- **Docker Compose plugin** v2
+- 不需要单独装 nginx / redis(都是容器内置)
+- 不需要 Go / Node 工具链(build 在容器内完成)
 
-- 宝塔 7.x+ 已装(`/usr/bin/bt` 存在)
-- 宝塔自带的 nginx + redis(或 apt 装 redis,但要修 libjemalloc 冲突,见 [宝塔部署](/deploy/baota))
-- 域名 / SSL 都通过宝塔面板申
+RAM 至少 **2 GB**,build admin / user 前端时单容器峰值会到 1.5 GB,小内存机请先把 swap 开到 4 GB。
 
-## 单二进制 fullstack
+```bash
+# 一行装 docker 全套
+curl -fsSL https://get.docker.com | bash
+systemctl enable --now docker
+docker --version
+docker compose version
+```
+
+## 宝塔面板部署
+
+参考 [宝塔面板部署](/deploy/baota)。需要:
+
+- **宝塔面板 7.x+** 已装好(`/usr/bin/bt` 存在 / 浏览器能访问 :8888 后台)
+- 宝塔自带的 **nginx**(无需另装)
+- **Redis 6.x / 7.x**,有两条路:
+  - 宝塔商店装(推荐,**无 libjemalloc 冲突**)
+  - `apt install redis-server`(需要一行 systemd drop-in 修 libjemalloc,详见部署页)
+- 不需要 Docker / Go / Node
+- 2 个域名(或 2 个 IP+端口),分别给 user 前台 + admin 后台
+
+## 单二进制 fullstack 部署
+
+参考 [单二进制部署](/deploy/single-binary)。**最省事的部署方式**:
 
 - 任意 64 位 Linux(amd64 / arm64)
-- 不需要 nginx / Go / Node 任何编译时依赖
-- 唯一外部依赖是 **Redis**,本机 apt 装即可
+- **Redis 6.x / 7.x**(本机 `apt install redis-server` 就行)
+- **systemd**(`install.sh` 自动装 unit)
+- 不需要 nginx(可选;裸跑 8080 也行,生产建议前面套 nginx + HTTPS)
+- 不需要 Go / Node(下载预编译 tarball)
+- 不需要宝塔 / Docker
 
-## 源码编译(开发)
+如果想前面套 nginx 加 HTTPS,自装 nginx 或借现成的反代(Caddy / Cloudflare Tunnel)。
+
+## 源码编译(开发者)
+
+参考 [手动部署](/deploy/manual)。需要完整工具链:
 
 - **Go 1.25+**(`go build -tags release fullstack`)
-- **Node.js 24+**(`vite build` 前端)
-- Redis 任意版本 ≥ 6
-- Linux / macOS / Windows + WSL 都能跑
+- **Node.js 24+** + **npm 10+**(`vite build` 前端)
+- **Redis 6.x / 7.x**
+- **git** 2.x
+- 操作系统:Linux / macOS / Windows + WSL 都行
 
-## 数据库选择(任何部署方式都适用)
+dev 模式跑前端会自动起 vite dev server(localhost:5173 / 5174),后端 `go run ./cmd/server` 起在 8080。生产 build 走 [发布流程](/intro/changelog#发布流程) 走 GoReleaser + GitHub Actions。
+
+## 数据库选择(所有方式通用)
 
 | 数据库 | 适合 | 备注 |
 |---|---|---|
-| **SQLite**(默认) | < 5 万订单 | 部署最简,单文件 |
-| **MySQL 8** | > 5 万订单或多副本 | 需要单独装,见 [备份与恢复 → 数据库迁移](/ops/backup-restore) |
+| **SQLite**(默认) | < 5 万订单 | 部署最简,单文件,无需另装 |
+| **MySQL 8** | > 5 万订单或多副本 | 单独装,见 [备份与恢复 → 数据库迁移](/ops/backup-restore#数据库迁移sqlite--mysql) |
 | PostgreSQL | 实验性 | 同上 |
 
-## 防火墙(任何部署方式)
-
-| 端口 | 用途 | 公网开放? |
-|---|---|---|
-| 22 | SSH | ✓ |
-| 80 | HTTPS redirect | ✓ |
-| 443 | HTTPS | ✓ |
-| 8080 | api 直连(裸 IP 访问) | ❌(被 nginx 代理) |
-| 6379 | Redis | ❌(必须 127.0.0.1 绑定) |
-
-```bash
-# ufw 标准最小集
-ufw default deny incoming
-ufw allow 22/tcp
-ufw allow 80/tcp
-ufw allow 443/tcp
-ufw enable
-```
+如果不确定,**选 SQLite**。后期数据上量再迁。
