@@ -58,65 +58,159 @@ cd deploy && docker compose up -d --build
 
 ### 2. 宝塔面板部署
 
-适合已经在用宝塔管 PHP / nginx 网站的人。不用动 docker、不写 systemd,完全在面板里操作。
+适合已经用宝塔管 nginx 网站的人,不用动 Docker。**整体架构**:
 
-**前置**：宝塔 7.x+,已装好 nginx 和 redis(应用商店搜"Redis"一键装)。
-
-#### 2.1 准备文件
-
-```bash
-# 1. 上传二进制 (headless 版,前端给宝塔站点托管)
-mkdir -p /www/server/dujiao && cd /www/server/dujiao
-curl -L -o pkg.tar.gz https://github.com/TokensZhuanfa/dujiao-shop/releases/latest/download/dujiao-shop-headless_v1.0.0_linux_amd64.tar.gz
-tar xzf pkg.tar.gz && rm pkg.tar.gz
-
-# 2. 准备 admin / user 前端 dist
-cd /www/wwwroot && mkdir -p dujiao-admin dujiao-user
-curl -L -o /tmp/admin.zip https://github.com/TokensZhuanfa/dujiao-shop/releases/latest/download/dujiao-shop-admin-v1.0.0.zip
-curl -L -o /tmp/user.zip  https://github.com/TokensZhuanfa/dujiao-shop/releases/latest/download/dujiao-shop-user-v1.0.0.zip
-unzip -q /tmp/admin.zip -d dujiao-admin/
-unzip -q /tmp/user.zip  -d dujiao-user/
-chown -R www:www dujiao-admin dujiao-user
+```
+┌─────────────────────────────────────────────────────────────┐
+│  宿主 Linux (Debian 12 / Ubuntu)                            │
+│                                                              │
+│  ┌────────────┐  ┌────────────┐                             │
+│  │ 站点 1     │  │ 站点 2     │   ← 宝塔面板加 2 个站      │
+│  │ user.x.com │  │ admin.x.com│                             │
+│  │ :80/443    │  │ :80/443    │                             │
+│  └─────┬──────┘  └─────┬──────┘                             │
+│        │ /api/ proxy   │ /api/ proxy                        │
+│        └───────┬───────┘                                    │
+│                ▼                                            │
+│        dujiao-api-headless   ──────►  redis-server          │
+│        (systemd, 监听 127.0.0.1:8080)  (apt 装, 127.0.0.1)  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-#### 2.2 改配置 + 启 api
+**前置**:
+- 宝塔 7.x+ 已装好 (`/usr/bin/bt` 存在)
+- 宝塔内置 nginx
+- 准备好 2 个域名指到本机(可后补,先用 IP+端口验证也行)
+
+#### 2.1 装 Redis (避开宝塔自带 libjemalloc 冲突)
 
 ```bash
-cp /www/server/dujiao/config.template.yml /www/server/dujiao/config.yml
-vi /www/server/dujiao/config.yml
-# 至少改:
-#   jwt_secret  →  openssl rand -base64 32
-#   redis.address: 127.0.0.1:6379
-#   server.port: 8080
+apt update && apt install -y redis-server unzip
 ```
 
-把 api 挂到宝塔进程守护:**软件商店 → 系统加固 → 进程守护 (Supervisor)**,新增:
+⚠️ **必踩坑**:apt 装的 redis 7.x 会被宝塔自带的 `/usr/local/lib/libjemalloc.so.2`(旧版)劫持,启动报 `error while loading shared libraries: libjemalloc.so.2: failed to map segment from shared object`。一行 systemd drop-in 强制用 apt 的 jemalloc 修好:
 
-| 字段 | 值 |
-|---|---|
-| 名称 | dujiao-api |
-| 启动用户 | www |
-| 运行目录 | `/www/server/dujiao` |
-| 启动命令 | `./dujiao-api-headless` |
-| 进程数量 | 1 |
-| 自启 | ✓ |
+```bash
+mkdir -p /etc/systemd/system/redis-server.service.d
+cat > /etc/systemd/system/redis-server.service.d/override.conf <<'EOF'
+[Service]
+Environment="LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2"
+EOF
+systemctl daemon-reload
+systemctl restart redis-server
+redis-cli ping     # 应返 PONG
+```
 
-保存后点"启动",到日志页看是否正常监听 8080。
+#### 2.2 下载二进制 + 前端 dist
 
-#### 2.3 建两个网站 (admin / user)
+```bash
+mkdir -p /www/server/dujiao /www/wwwroot/dujiao-user /www/wwwroot/dujiao-admin
+cd /www/server/dujiao
 
-**宝塔 → 网站 → 添加站点**,各建一个,PHP 选**纯静态**:
+VERSION=v1.0.0   # 看 https://github.com/TokensZhuanfa/Dujiao-Shop/releases 最新版
+BASE=https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/${VERSION}
 
-| | admin 站 | user 站 |
+# headless 二进制 (api 后端,~28MB)
+curl -fsSL -O "${BASE}/dujiao-shop-headless_${VERSION}_linux_amd64.tar.gz"
+tar xzf dujiao-shop-headless_*.tar.gz
+chmod +x dujiao-api-headless admin-tool install.sh
+
+# 前端 dist (静态文件,给宝塔 nginx 托管)
+curl -fsSL -o admin.zip "${BASE}/dujiao-shop-admin-${VERSION}.zip"
+curl -fsSL -o user.zip  "${BASE}/dujiao-shop-user-${VERSION}.zip"
+unzip -q admin.zip -d /www/wwwroot/dujiao-admin/
+unzip -q user.zip  -d /www/wwwroot/dujiao-user/
+chown -R www:www /www/wwwroot/dujiao-admin /www/wwwroot/dujiao-user
+
+# 数据目录
+mkdir -p /www/server/dujiao/{db,uploads,credentials,logs}
+```
+
+#### 2.3 生成配置 config.yml
+
+`config.template.yml` 自带 4 个 `__XX__` 占位符,自动生成填充:
+
+```bash
+cd /www/server/dujiao
+APP_SECRET=$(openssl rand -hex 32)
+JWT_SECRET=$(openssl rand -hex 32)
+USER_JWT_SECRET=$(openssl rand -hex 32)
+ADMIN_PWD="Dj$(openssl rand -base64 18 | tr -d '/+=' | head -c14)1A"
+
+# 备份 secrets (这是首次安装的 admin 密码,务必记下来)
+cat > .secrets <<EOF
+APP_SECRET=$APP_SECRET
+JWT_SECRET=$JWT_SECRET
+USER_JWT_SECRET=$USER_JWT_SECRET
+ADMIN_PASSWORD=$ADMIN_PWD
+EOF
+chmod 600 .secrets
+
+# 渲染配置 + 把 docker 默认的 redis host 改成 127.0.0.1 (重要!)
+sed -e "s|__APP_SECRET__|$APP_SECRET|g" \
+    -e "s|__JWT_SECRET__|$JWT_SECRET|g" \
+    -e "s|__USER_JWT_SECRET__|$USER_JWT_SECRET|g" \
+    -e "s|__ADMIN_PASSWORD__|$ADMIN_PWD|g" \
+    -e "s|^  host: redis$|  host: 127.0.0.1|g" \
+    config.template.yml > config.yml
+chmod 600 config.yml
+```
+
+⚠️ **第 5 行 sed 必须有**:`config.template.yml` 的 `host: redis` 是给 docker-compose 用的(内网 DNS 名),非 Docker 部署下解析失败甚至被某些服务商的反向 DNS 劫持到外部 IP,导致 api 启动后 CPU 100% 跑 redis 重试。
+
+#### 2.4 systemd 拉起 dujiao-api
+
+```bash
+cat > /etc/systemd/system/dujiao-api.service <<'EOF'
+[Unit]
+Description=dujiao-shop API (headless)
+After=network-online.target redis-server.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/www/server/dujiao
+ExecStart=/www/server/dujiao/dujiao-api-headless
+Restart=always
+RestartSec=5
+LimitNOFILE=65535
+StandardOutput=append:/var/log/dujiao/api.log
+StandardError=append:/var/log/dujiao/api.log
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+mkdir -p /var/log/dujiao
+systemctl daemon-reload
+systemctl enable --now dujiao-api
+sleep 5
+curl -fsS http://127.0.0.1:8080/health    # 应返 {"status":"ok"}
+```
+
+> 不想用 systemd?可以走宝塔面板:**软件商店 → 进程守护 (Supervisor)**,新增任务:运行目录 `/www/server/dujiao`,启动命令 `./dujiao-api-headless`,用户 root。systemd 更轻、更稳,推荐它。
+
+#### 2.5 在宝塔面板加 **2 个站点**
+
+进**宝塔面板 → 网站 → 添加站点**,各填一个:
+
+| 字段 | **站点 1 (user 前台)** | **站点 2 (admin 后台)** |
 |---|---|---|
-| 域名 | `admin.your.com` | `your.com` |
-| 根目录 | `/www/wwwroot/dujiao-admin` | `/www/wwwroot/dujiao-user` |
-| PHP 版本 | 纯静态 | 纯静态 |
+| 域名 | `user.your.com` (你的域名) | `admin.your.com` |
+| 备注 | dujiao-shop 用户端 | dujiao-shop 管理端 |
+| 根目录 | `/www/wwwroot/dujiao-user` | `/www/wwwroot/dujiao-admin` |
+| FTP | 不创建 | 不创建 |
+| 数据库 | 不创建 | 不创建 |
+| PHP 版本 | **纯静态** | **纯静态** |
 
-然后给每个站**伪静态(Rewrite)**贴这套规则,把 api 路径反代到 8080,其他走 SPA:
+> 没域名也行:**域名**字段填 `94.16.112.46:8082`(写 IP:端口),宝塔会自动把站点监听 8082,直接用 IP 访问。
+
+#### 2.6 给每站贴**伪静态**(Rewrite)
+
+**宝塔面板 → 网站 → user 站点 → 设置 → 伪静态**,清空原内容,贴下面这一整段:
 
 ```nginx
-# admin / user 站通用伪静态
+# /api/ 反代到本机 dujiao-api
 location /api/ {
     proxy_pass http://127.0.0.1:8080;
     proxy_http_version 1.1;
@@ -125,36 +219,68 @@ location /api/ {
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_buffering off;
-    client_max_body_size 100M;
 }
 
-# SPA 路由 fallback
+# 上传文件接口需要更大 body
+client_max_body_size 100M;
+
+# SPA 路由 fallback (Vue Router history 模式必须)
 location / {
     try_files $uri $uri/ /index.html;
 }
 ```
 
-#### 2.4 SSL
+**保存后宝塔会自动 reload nginx**。**admin 站点贴同样一份**(两个站伪静态完全一致)。
 
-宝塔站点 → SSL → 用 Let's Encrypt 一键申请,**记得勾"强制 HTTPS"**。两个站各申一次。
+#### 2.7 申请 SSL (有域名才用)
 
-#### 2.5 验证 + 收尾
+每个站 → **SSL → Let's Encrypt → 申请**。两站各申一次,**勾"强制 HTTPS"**。
+
+#### 2.8 验证 + 浏览器登录
 
 ```bash
-# api 进程
-ps aux | grep dujiao-api-headless
-curl -fsSL http://127.0.0.1:8080/health   # 应返 OK
+# 后端探活
+curl http://127.0.0.1:8080/health             # {"status":"ok"}
+curl http://127.0.0.1:8080/api/v1/public/config | head -c 300  # 看 app_version
 
-# 浏览器访问 https://admin.your.com 看到登录页 = 成功
+# 前端走宝塔 nginx
+curl -I http://user.your.com/                  # 200
+curl -I http://admin.your.com/                 # 200
+
+# 浏览器打开 https://admin.your.com → 登录
+#   用户名: admin
+#   密码:   见 /www/server/dujiao/.secrets ADMIN_PASSWORD
 ```
 
-**运维 CLI**:
+#### 2.9 运维 CLI
+
 ```bash
-sudo -u www /www/server/dujiao/admin-tool list-admins
-sudo -u www /www/server/dujiao/admin-tool reset-2fa --username admin
+# 列管理员
+/www/server/dujiao/admin-tool list-admins
+
+# 重置某管理员的 2FA (TOTP 丢失场景)
+/www/server/dujiao/admin-tool reset-2fa --username admin
 ```
 
-**升级**:替换 `dujiao-api-headless` 二进制后,在宝塔 Supervisor 点"重启"。前端站升级则覆盖 `/www/wwwroot/{admin,user}/` 即可。
+#### 2.10 升级到新版
+
+```bash
+cd /www/server/dujiao
+VERSION=v1.0.1   # 改成最新 tag
+curl -fsSL -O https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/${VERSION}/dujiao-shop-headless_${VERSION}_linux_amd64.tar.gz
+tar xzf dujiao-shop-headless_*.tar.gz
+chmod +x dujiao-api-headless admin-tool
+systemctl restart dujiao-api
+
+# 前端
+curl -fsSL -o /tmp/admin.zip https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/${VERSION}/dujiao-shop-admin-${VERSION}.zip
+curl -fsSL -o /tmp/user.zip  https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/${VERSION}/dujiao-shop-user-${VERSION}.zip
+unzip -qo /tmp/admin.zip -d /www/wwwroot/dujiao-admin/
+unzip -qo /tmp/user.zip  -d /www/wwwroot/dujiao-user/
+chown -R www:www /www/wwwroot/dujiao-{user,admin}
+
+# config.yml + 数据库 + 上传文件不会动
+```
 
 ---
 
