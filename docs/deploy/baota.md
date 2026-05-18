@@ -115,19 +115,6 @@ chown -R www:www /www/wwwroot/dujiao-admin
 ls /www/wwwroot/dujiao-admin
 ```
 
-::: warning v1.0.0 已知问题
-`dujiao-shop-admin-v1.0.0.zip` 里 HTML/JS 含 fullstack 模式的占位符 `__DJ_ADMIN_BASE__`,nginx 静态托管会导致**打开 admin 白屏**(F12 看到 URL 含 `__DJ_ADMIN_BASE__` 全部 404)。
-
-**workaround**(v1.0.0 解压后立刻跑):
-
-```bash
-find /www/wwwroot/dujiao-admin -type f \( -name '*.html' -o -name '*.js' -o -name '*.css' \) \
-  -exec sed -i 's|__DJ_ADMIN_BASE__||g' {} +
-```
-
-v1.0.1 起本 zip 已修(CI 改 build 两次,普通 build 不含占位符),无需此 workaround。
-:::
-
 现在两个站点已经"有 HTML 文件"了,但还没接后端,**直接访问会显示空白**(SPA 启动后第一件事就是请求 `/api/`,拿不到就卡住)。下一步装后端。
 
 ---
