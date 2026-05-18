@@ -6,25 +6,6 @@
 
 **A.** 装了宝塔的机器特有。宝塔自带的 `/usr/local/lib/libjemalloc.so.2` 旧版被 ld.so 优先加载,跟 apt redis 7.x 期望的 jemalloc 5.3 不兼容。修法见 [宝塔部署 2.1](/install/baota#_2-1-装-redis-二选一) — 用 systemd drop-in 加 `LD_PRELOAD` 强制走 apt 路径,或者直接走"宝塔商店装 redis"避开这个坑。
 
-### Q. 上传图片成功但 admin / 前台都不显示,F12 看 `/uploads/xxx.png` 404
-
-**A.** 宝塔/手动部署时常见。`uploads/` 目录在 **api 工作目录** `/www/server/dujiao/uploads/` 里(api 进程负责写),但 admin 站 nginx 根目录是 `/www/wwwroot/dujiao-admin/`,找不到 → 404。
-
-伪静态里加 `^~ /uploads/` 让 nginx 直接 serve api 的 uploads 目录:
-
-```nginx
-location ^~ /uploads/ {
-    alias /www/server/dujiao/uploads/;
-    try_files $uri =404;
-    expires 30d;
-    add_header Cache-Control "public, immutable";
-}
-```
-
-⚠️ **`^~` 不能省**。宝塔默认 vhost 自带 `location ~ .*\.(jpg|png|gif|...)$` 这条 regex(图片缓存优化),它的优先级**高于普通前缀 location**。如果你写成 `location /uploads/`,所有 `*.png` / `*.jpg` 请求都被 regex 抢走 → 在站点根目录找 → 404。改成 `^~ /uploads/`(优先前缀)就压过 regex 了。
-
-admin 站和 user 站**都要加**。如果保存后访问还是 403,放权限:`chmod -R o+rX /www/server/dujiao/uploads`。
-
 ### Q. 文件实际写在 `/root/dujiaoapi` 而不是 `/www/server/dujiao`,alias 404
 
 **A.** api 的 systemd unit 实际 `WorkingDirectory` 跟文档默认不一致。看一下:
