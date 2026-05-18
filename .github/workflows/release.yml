@@ -42,11 +42,20 @@ jobs:
             src/admin/package-lock.json
             src/user/package-lock.json
 
-      - name: Build admin (fullstack mode)
+      # admin 要 build 两次:
+      #   ① fullstack 模式 → 含 __DJ_ADMIN_BASE__ 占位符,嵌入 dujiao-api 二进制由 Go 运行时替换
+      #   ② 普通模式 → 纯静态,给 headless / nginx 用 (本次踩坑就是这个 zip 含占位符 → 白屏)
+      - name: Build admin (fullstack mode) for binary embed
         working-directory: src/admin
         run: |
           npm ci
           npm run build:fullstack
+          mv dist dist-fullstack
+
+      - name: Build admin (standalone) for nginx-served zip
+        working-directory: src/admin
+        run: |
+          npm run build
 
       - name: Build user
         working-directory: src/user
@@ -54,12 +63,12 @@ jobs:
           npm ci
           npm run build
 
-      # 把前端 dist 嵌入到 api 树里,goreleaser 用 fullstack tag 时会 embed 进二进制
+      # 嵌入 api 用 fullstack 版,可保留占位符让 Go 二进制运行时替换
       - name: Embed frontend assets into api
         run: |
           mkdir -p src/api/internal/web/dist
-          cp -r src/admin/dist src/api/internal/web/dist/admin
-          cp -r src/user/dist  src/api/internal/web/dist/user
+          cp -r src/admin/dist-fullstack src/api/internal/web/dist/admin
+          cp -r src/user/dist            src/api/internal/web/dist/user
           ls -la src/api/internal/web/dist/
 
       # ---------- Go + GoReleaser ----------

@@ -6,6 +6,17 @@
 
 **A.** 装了宝塔的机器特有。宝塔自带的 `/usr/local/lib/libjemalloc.so.2` 旧版被 ld.so 优先加载,跟 apt redis 7.x 期望的 jemalloc 5.3 不兼容。修法见 [宝塔部署 2.1](/install/baota#_2-1-装-redis-二选一) — 用 systemd drop-in 加 `LD_PRELOAD` 强制走 apt 路径,或者直接走"宝塔商店装 redis"避开这个坑。
 
+### Q. admin 后台打开白屏,F12 看到 URL 含 `__DJ_ADMIN_BASE__`
+
+**A.** v1.0.0 的 `dujiao-shop-admin-v1.0.0.zip` 含 fullstack 模式占位符,nginx 静态托管会导致全部资源 404 → 白屏。
+
+```bash
+find /www/wwwroot/dujiao-admin -type f \( -name '*.html' -o -name '*.js' -o -name '*.css' \) \
+  -exec sed -i 's|__DJ_ADMIN_BASE__||g' {} +
+```
+
+跑完浏览器 `Ctrl+Shift+R` 强刷。v1.0.1 起 CI 已修(build 两次),新 release 无需此 workaround。
+
 ### Q. api 跑起来 CPU 100%,日志全是 `redis i/o timeout`
 
 **A.** `config.yml` 的 `redis.host` 是 `redis`(docker DNS 名),非 Docker 部署时这个主机名解析到野生 IP。改成 `127.0.0.1` 即可。
