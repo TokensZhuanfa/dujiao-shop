@@ -248,6 +248,15 @@ location /api/ {
     proxy_buffering off;
 }
 
+# /uploads/ 让 nginx 直接 serve api 工作目录里的图片
+# (商品图 / Logo / Banner / 卡密图等都落在这,不反代去走 api 更高效, 还能 30 天缓存)
+location /uploads/ {
+    alias /www/server/dujiao/uploads/;
+    try_files $uri =404;
+    expires 30d;
+    add_header Cache-Control "public, immutable";
+}
+
 # 上传文件接口需要更大 body (商品图、卡密文件)
 client_max_body_size 100M;
 
@@ -256,6 +265,17 @@ location / {
     try_files $uri $uri/ /index.html;
 }
 ```
+
+保存后宝塔自动 reload nginx。**两个站都贴一遍,内容完全相同**。
+
+::: tip 关于 /uploads/ 权限
+nginx 默认用 `www` 用户运行,但 `/www/server/dujiao/uploads/` 是 root 写的。
+如果浏览器访问 `/uploads/xxx.png` 返 403:
+
+```bash
+chmod -R o+rX /www/server/dujiao/uploads
+```
+:::
 
 保存后宝塔自动 reload nginx。**两个站都贴一遍,内容完全相同**。
 

@@ -17,6 +17,23 @@ find /www/wwwroot/dujiao-admin -type f \( -name '*.html' -o -name '*.js' -o -nam
 
 跑完浏览器 `Ctrl+Shift+R` 强刷。v1.0.1 起 CI 已修(build 两次),新 release 无需此 workaround。
 
+### Q. 上传图片成功但 admin / 前台都不显示,F12 看 `/uploads/xxx.png` 404
+
+**A.** 宝塔/手动部署时常见。`uploads/` 目录在 **api 工作目录** `/www/server/dujiao/uploads/` 里(api 进程负责写),但 admin 站 nginx 根目录是 `/www/wwwroot/dujiao-admin/`,找不到 → 404。
+
+伪静态里加 `/uploads/` 让 nginx 直接 serve api 的 uploads 目录:
+
+```nginx
+location /uploads/ {
+    alias /www/server/dujiao/uploads/;
+    try_files $uri =404;
+    expires 30d;
+    add_header Cache-Control "public, immutable";
+}
+```
+
+admin 站和 user 站**都要加**。如果保存后访问还是 403,放权限:`chmod -R o+rX /www/server/dujiao/uploads`。
+
 ### Q. api 跑起来 CPU 100%,日志全是 `redis i/o timeout`
 
 **A.** `config.yml` 的 `redis.host` 是 `redis`(docker DNS 名),非 Docker 部署时这个主机名解析到野生 IP。改成 `127.0.0.1` 即可。
