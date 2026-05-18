@@ -21,10 +21,10 @@ find /www/wwwroot/dujiao-admin -type f \( -name '*.html' -o -name '*.js' -o -nam
 
 **A.** 宝塔/手动部署时常见。`uploads/` 目录在 **api 工作目录** `/www/server/dujiao/uploads/` 里(api 进程负责写),但 admin 站 nginx 根目录是 `/www/wwwroot/dujiao-admin/`,找不到 → 404。
 
-伪静态里加 `/uploads/` 让 nginx 直接 serve api 的 uploads 目录:
+伪静态里加 `^~ /uploads/` 让 nginx 直接 serve api 的 uploads 目录:
 
 ```nginx
-location /uploads/ {
+location ^~ /uploads/ {
     alias /www/server/dujiao/uploads/;
     try_files $uri =404;
     expires 30d;
@@ -32,7 +32,37 @@ location /uploads/ {
 }
 ```
 
+⚠️ **`^~` 不能省**。宝塔默认 vhost 自带 `location ~ .*\.(jpg|png|gif|...)$` 这条 regex(图片缓存优化),它的优先级**高于普通前缀 location**。如果你写成 `location /uploads/`,所有 `*.png` / `*.jpg` 请求都被 regex 抢走 → 在站点根目录找 → 404。改成 `^~ /uploads/`(优先前缀)就压过 regex 了。
+
 admin 站和 user 站**都要加**。如果保存后访问还是 403,放权限:`chmod -R o+rX /www/server/dujiao/uploads`。
+
+### Q. 文件实际写在 `/root/dujiaoapi` 而不是 `/www/server/dujiao`,alias 404
+
+**A.** api 的 systemd unit 实际 `WorkingDirectory` 跟文档默认不一致。看一下:
+
+```bash
+systemctl cat dujiao-api | grep WorkingDirectory
+ps -ef | grep dujiao-api | grep -v grep
+```
+
+两条路修:
+
+**A. 改 nginx alias 指向真实路径**(快但 `/root/` 默认 perm 700):
+```bash
+chmod o+x /root /root/dujiaoapi    # 让 nginx www 用户能进去
+# 然后 alias 写 /root/dujiaoapi/uploads/
+```
+
+**B. 把 api 数据搬到文档默认 `/www/server/dujiao/`**(推荐,跟文档对齐):
+```bash
+systemctl stop dujiao-api
+mkdir -p /www/server/dujiao
+mv /root/dujiaoapi/* /www/server/dujiao/
+mv /root/dujiaoapi/.secrets /www/server/dujiao/ 2>/dev/null
+sed -i 's|/root/dujiaoapi|/www/server/dujiao|g' /etc/systemd/system/dujiao-api.service
+systemctl daemon-reload
+systemctl start dujiao-api
+```
 
 ### Q. api 跑起来 CPU 100%,日志全是 `redis i/o timeout`
 

@@ -250,7 +250,9 @@ location /api/ {
 
 # /uploads/ 让 nginx 直接 serve api 工作目录里的图片
 # (商品图 / Logo / Banner / 卡密图等都落在这,不反代去走 api 更高效, 还能 30 天缓存)
-location /uploads/ {
+# ⚠️ 必须用 `^~` 前缀,优先级高于宝塔默认带的 `\.(jpg|png|gif)$` regex location;
+#    用普通 `location /uploads/` 会被 regex 抢走 → 站点根目录找不到 → 404
+location ^~ /uploads/ {
     alias /www/server/dujiao/uploads/;
     try_files $uri =404;
     expires 30d;
