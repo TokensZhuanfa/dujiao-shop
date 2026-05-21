@@ -6,8 +6,8 @@
 
 ```bash
 # 1. 下载最新 release 的 fullstack 版
-#    把 URL 里的 v1.0.0 替换成最新 tag (见 https://github.com/TokensZhuanfa/Dujiao-Shop/releases)
-curl -L -O https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/v1.0.0/dujiao-shop-fullstack_v1.0.0_linux_amd64.tar.gz
+#    把 URL 里的 v1.0.1 替换成最新 tag (见 https://github.com/TokensZhuanfa/Dujiao-Shop/releases)
+curl -L -O https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/v1.0.1/dujiao-shop-fullstack_v1.0.1_linux_amd64.tar.gz
 
 # 2. 解压 + 安装 (装 systemd unit + 系统用户 dujiao)
 tar xzf dujiao-shop-fullstack_*.tar.gz

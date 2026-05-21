@@ -4,6 +4,13 @@
 
 > Release 由 GitHub Actions 自动构建,**每个版本都附带 SHA-256 校验文件**,下载后请校验。
 
+## v1.0.1 (2026-05-18)
+
+### 修复
+
+- **admin zip 白屏**:v1.0.0 的 `dujiao-shop-admin-v1.0.0.zip` 含 fullstack 模式占位符 `__DJ_ADMIN_BASE__`,nginx 静态托管会导致全部资源 404 → 打开后台白屏。CI 改为 admin build 两次:`build:fullstack` 嵌入 api 二进制(保留占位符让 Go 运行时替换),`build` 出标准 standalone zip(不含占位符)
+- **docs**: 文档站若干修正(宝塔教程衔接、`/uploads/` 反代用 `^~` 优先前缀压过宝塔默认 regex 等)
+
 ## v1.0.0 (2026-05-16)
 
 首个独立 release。在上游 [dujiao-next](https://github.com/dujiao-next) 基础上的二次开发汇总。

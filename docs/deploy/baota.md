@@ -95,12 +95,12 @@ redis-cli ping     # PONG
 command -v unzip >/dev/null || apt install -y unzip
 ```
 
-> 下面的 URL 都基于 **v1.0.0**(当前最新)。升级新版时,把 URL 里的 `v1.0.0` 整体替换成新 tag(如 `v1.0.1`)即可,文件名规则不变。最新 tag 看 [Releases 页面](https://github.com/TokensZhuanfa/Dujiao-Shop/releases)。
+> 下面的 URL 都基于 **v1.0.1**(当前最新)。升级新版时,把 URL 里的 `v1.0.1` 整体替换成新 tag(如 `v1.0.1`)即可,文件名规则不变。最新 tag 看 [Releases 页面](https://github.com/TokensZhuanfa/Dujiao-Shop/releases)。
 
 ### 3.1 站点 ① user 站 ← 用户前台 dist
 
 ```bash
-curl -fsSL -o /tmp/user.zip https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/v1.0.0/dujiao-shop-user-v1.0.0.zip
+curl -fsSL -o /tmp/user.zip https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/v1.0.1/dujiao-shop-user-v1.0.1.zip
 unzip -q /tmp/user.zip -d /www/wwwroot/dujiao-user/
 chown -R www:www /www/wwwroot/dujiao-user
 ls /www/wwwroot/dujiao-user   # 应看到 index.html + assets/
@@ -109,7 +109,7 @@ ls /www/wwwroot/dujiao-user   # 应看到 index.html + assets/
 ### 3.2 站点 ② admin 站 ← 管理后台 dist
 
 ```bash
-curl -fsSL -o /tmp/admin.zip https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/v1.0.0/dujiao-shop-admin-v1.0.0.zip
+curl -fsSL -o /tmp/admin.zip https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/v1.0.1/dujiao-shop-admin-v1.0.1.zip
 unzip -q /tmp/admin.zip -d /www/wwwroot/dujiao-admin/
 chown -R www:www /www/wwwroot/dujiao-admin
 ls /www/wwwroot/dujiao-admin
@@ -128,7 +128,7 @@ mkdir -p /www/server/dujiao /var/log/dujiao
 cd /www/server/dujiao
 
 # 后端二进制(~28 MB,含 admin-tool + install.sh + config 模板)
-curl -fsSL -O https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/v1.0.0/dujiao-shop-headless_v1.0.0_linux_amd64.tar.gz
+curl -fsSL -O https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/v1.0.1/dujiao-shop-headless_v1.0.1_linux_amd64.tar.gz
 tar xzf dujiao-shop-headless_*.tar.gz
 chmod +x dujiao-api-headless admin-tool install.sh
 
@@ -310,20 +310,20 @@ curl -I http://admin.your.com/                                   # 200
 
 ## 11. 升级到新版
 
-后端二进制 + 前端 dist 分开升。把下面所有 URL 里的 `v1.0.0` 整体改成新 tag(如 `v1.0.1`):
+后端二进制 + 前端 dist 分开升。把下面所有 URL 里的 `v1.0.1` 整体改成新 tag(如 `v1.0.1`):
 
 ```bash
 cd /www/server/dujiao
 
 # 后端
-curl -fsSL -O https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/v1.0.0/dujiao-shop-headless_v1.0.0_linux_amd64.tar.gz
+curl -fsSL -O https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/v1.0.1/dujiao-shop-headless_v1.0.1_linux_amd64.tar.gz
 tar xzf dujiao-shop-headless_*.tar.gz
 chmod +x dujiao-api-headless admin-tool
 systemctl restart dujiao-api
 
 # 前端 (覆盖式解压)
-curl -fsSL -o /tmp/admin.zip https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/v1.0.0/dujiao-shop-admin-v1.0.0.zip
-curl -fsSL -o /tmp/user.zip  https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/v1.0.0/dujiao-shop-user-v1.0.0.zip
+curl -fsSL -o /tmp/admin.zip https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/v1.0.1/dujiao-shop-admin-v1.0.1.zip
+curl -fsSL -o /tmp/user.zip  https://github.com/TokensZhuanfa/Dujiao-Shop/releases/download/v1.0.1/dujiao-shop-user-v1.0.1.zip
 unzip -qo /tmp/admin.zip -d /www/wwwroot/dujiao-admin/
 unzip -qo /tmp/user.zip  -d /www/wwwroot/dujiao-user/
 chown -R www:www /www/wwwroot/dujiao-{user,admin}
